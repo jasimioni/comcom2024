@@ -25,8 +25,8 @@ def consolidate(directory):
         correct = df.query('y == y_pred')['y'].count()
         fp = df.query('y == 0 and y_pred == 1')['y'].count()
         fn = df.query('y == 1 and y_pred == 0')['y'].count()
-        tn = df.query('y == 0 and y_pred == 0')['y'].count()
-        tp = df.query('y == 1 and y_pred == 1')['y'].count()
+        tn = df.query('y == 0')['y'].count()
+        tp = df.query('y == 1')['y'].count()
 
         err = 100 * ( total - correct ) / total
         fpr = 100 * fp / (fp + tn)

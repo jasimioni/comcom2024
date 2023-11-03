@@ -1,12 +1,14 @@
 #!/usr/bin/env/python3
 
 import os
+import sys
+sys.path.append('..')
+sys.path.append('icc2024')
 from pathlib import Path
 import numpy as np
 import pandas as pd
 import pickle
 import scipy
-import sys
 
 import matplotlib
 import matplotlib.pyplot as plt
@@ -14,22 +16,30 @@ from mpl_toolkits import mplot3d
 from matplotlib.ticker import MaxNLocator
 from matplotlib import cm
 
+from utils.eval_functions import *
+
 import json
 
 print(os.getcwd())
 
+MONTHS_NAME = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
 net_data = {
     'alexnet' : {
         'rpi_folder' : 'icc2024/evaluations/rpi_evals/AlexNet/AlexNetWithExits_epoch_19_90.1_91.1.pth',
+        'cuda_folder' : 'icc2024/evaluations/AlexNet/cuda/saves/AlexNetWithExits/2023-10-31-01-01-09/epoch_19_90.1_91.1.pth',
         'nsga_result_file' : 'icc2024/nsga2/alexnet_x_f_0.9_2016_23.sav',
         'rpi_single_exit_folder' : 'icc2024/evaluations/rpi_evals/AlexNet/AlexNet_epoch_16_91.2.pth/',
+        'cuda_single_exit_folder' : 'icc2024/evaluations/AlexNet/cuda/saves/AlexNet/2023-10-31-01-48-09/epoch_16_91.2.pth/',
         'operation_point' : 93,
         'label' : 'AlexNet'
     },
     'mobilenet' : {
         'rpi_folder' : 'icc2024/evaluations/rpi_evals/MobileNet/MobileNetV2WithExits_epoch_19_89.7_90.9.pth',
+        'cuda_folder' : 'icc2024/evaluations/MobileNet/cuda/saves/MobileNetV2WithExits/2023-08-20-05-20-25/epoch_19_89.7_90.9.pth',
         'nsga_result_file' : 'icc2024/nsga2/mobilenet_x_f_0.9_2016_23.sav',
         'rpi_single_exit_folder' : 'icc2024/evaluations/rpi_evals/MobileNet/MobileNetV2_epoch_17_90.9.pth/',
+        'cuda_single_exit_folder' : 'icc2024/evaluations/MobileNet/cuda/saves/MobileNetV2/2023-10-26-04-42-32/epoch_17_90.9.pth/',
         'operation_point' : 66,
         'label' : 'MobileNetV2'
     }
@@ -51,7 +61,7 @@ def remove_dominated(results):
     return len(to_delete)
     
 for network in net_data.keys():
-    glob = f'2016_0[12]'
+    glob = f'2016_0[23]'
     # Single exit time
 
     files = Path(net_data[network]['rpi_single_exit_folder']).glob(f'*{glob}*')
@@ -159,7 +169,7 @@ if __name__ == '__main__':
     ax.set(ylim=(y_min, y_max), ylabel='Error Rate (%)')
     # ax.tick_params(axis='x', rotation=45)
 
-    plt.grid(linestyle = '--', linewidth = 0.5)
+    # plt.grid(linestyle = '--', linewidth = 0.5)
 
     arr_x = 15
     arr_y = 9
@@ -181,7 +191,7 @@ if __name__ == '__main__':
         x1 = x * 100
 
         operation_point = df.iloc[net_data[network]['operation_point']]
-        # print(operation_point)
+        print(operation_point)
         y_op = operation_point['Accuracy']
         y1_op = 100 * y_op
         x_op = operation_point['Time']
@@ -201,7 +211,7 @@ if __name__ == '__main__':
         net_data[network]['multi_exit_error'] = y_op
     
     ax.text(arr_x - 3, arr_y + 0.1, 'Operation Point', fontsize=18)
-    ax.legend(loc='upper right', frameon=True, fontsize=18)
+    ax.legend(loc='upper right', frameon=False, fontsize=18)
     ax.set(xlim=(x_min, x_max), xlabel='Normalized Processing Time')
     fig.savefig(f'icc2024/nsga2/nsga_pareto.pdf')
 
@@ -224,6 +234,8 @@ if __name__ == '__main__':
         multi_exit_time = 1000 * net_data[network]['multi_exit_time']
         multi_exit_error = 100 * net_data[network]['multi_exit_error']
         print(f"{network}: {single_exit_time} {single_exit_error} {multi_exit_time} {multi_exit_error}")
+        op = net_data[network]['df'].iloc[net_data[network]['operation_point']]
+        print(f"{network} Operation points: {op['n_1']} | {op['a_1']} | {op['n_2']} | {op['a_2']}")
 
         x = [ single_exit_time, multi_exit_time ]
         y = [ single_exit_error, multi_exit_error ]
@@ -238,7 +250,151 @@ if __name__ == '__main__':
         ax.text(multi_exit_time + 3.2, multi_exit_error - 0.5, text, fontsize=14)
         ax.plot(x, y, linestyle='dashed', linewidth=2, color=colors[i])
 
-    ax.legend(loc='upper left', frameon=True, fontsize=18)
-    plt.grid(linestyle = '--', linewidth = 0.5)
+    ax.legend(loc='upper left', frameon=False, fontsize=18)
+    # plt.grid(linestyle = '--', linewidth = 0.5)
     
     fig.savefig(f'icc2024/nsga2/paretocomp.pdf')
+
+    ### GENERATING FIG4 - ACCURACY
+
+    for i, network in enumerate(sorted(net_data.keys())):
+        fig, ax = plt.subplots(constrained_layout=True, figsize=(7, 5))
+
+        x_max = 0.15 * 1000
+        x_min = 15
+
+        #ax.set(xlim=(x_min, x_max))
+        #ax.set(ylim=(y_min, y_max), ylabel='Error rate (%)')
+        ax.set(ylabel='Accuracy (%)')
+        ax.tick_params(axis='x', rotation=50)
+
+        op = net_data[network]['df'].iloc[net_data[network]['operation_point']]
+        print(f"{network} Operation points: {op['n_1']} | {op['a_1']} | {op['n_2']} | {op['a_2']}")
+
+        op_results = {
+            'acc' : [],
+            'f1' : [],
+            'exit_rate' : []
+        }
+
+        for month in range(1, 13):
+            glob = f'2016_{month:02d}'
+            files = Path(net_data[network]['cuda_folder']).glob(f'*{glob}*')
+            dfs = []
+            for e_file in sorted(files):
+                dfs.append(pd.read_csv(e_file))
+            
+            df = pd.concat(dfs, ignore_index=True)
+
+            accuracy, fpr, fnr, precision, recall, f1, acceptance_rate, exit1_rate = get_model_results(df, op['n_1'], op['a_1'], op['n_2'], op['a_2'])
+
+            print(' | '.join([ f'{val:.2f}' for val in [ accuracy, fpr, fnr, precision, recall, f1, acceptance_rate, exit1_rate ] ]))
+
+            op_results['acc'].append(accuracy)
+            op_results['f1'].append(f1)
+            op_results['exit_rate'].append(exit1_rate)
+
+        net_data[network]['op_results'] = op_results
+
+        print(op_results['acc'])
+        ax.plot(MONTHS_NAME, [ 100 * acc for acc in op_results['acc'] ], label='Accuracy', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='black')
+
+        # ax.legend(loc='upper right', frameon=False, fontsize=18)
+        
+        fig.savefig(f'icc2024/nsga2/accuracyprop{network}.pdf')
+
+    ### FIG 5 
+    network = 'alexnet'
+    op_results = net_data[network]['op_results']
+    f1_single = []
+    for month in range(1, 13):
+        glob = f'2016_{month:02d}'
+        files = Path(net_data[network]['cuda_single_exit_folder']).glob(f'*{glob}*')
+        dfs = []
+        for e_file in sorted(files):
+            dfs.append(pd.read_csv(e_file))
+        
+        df = pd.concat(dfs, ignore_index=True)
+
+        tn = df.query('y == 0 and y_pred == 0')['y'].count()
+        tp = df.query('y == 1 and y_pred == 1')['y'].count()
+        fn = df.query('y == 1 and y_pred == 0')['y'].count()
+        fp = df.query('y == 0 and y_pred == 1')['y'].count()
+        total = df['y'].count()
+
+        accuracy = (tn + tp) / total
+        fpr = fp / (fp + tn)
+        fnr = fn / (fn + tp)
+        precision = tp / (tp + fp)
+        recall = tp / (tp + fn)
+
+        f1 = 2 * precision * recall / (precision + recall)
+
+        f1_single.append(f1)
+
+    fig, ax = plt.subplots(constrained_layout=True, figsize=(7, 5))
+
+    x_max = 0.15 * 1000
+    x_min = 15
+
+    #ax.set(xlim=(x_min, x_max))
+    #ax.set(ylim=(y_min, y_max), ylabel='F1')
+    ax.set(ylabel='F1')
+    ax.tick_params(axis='x', rotation=50)    
+    ax.plot(MONTHS_NAME, op_results['f1'], label='Ours', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='black')
+    ax.plot(MONTHS_NAME, f1_single, label='Trad.', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='red')
+
+    ax.legend(loc='upper right', frameon=False, fontsize=18)
+    fig.savefig(f'icc2024/nsga2/f1comp.pdf')
+    
+    # FIG 6
+    network = 'alexnet'
+    files = Path(net_data[network]['rpi_single_exit_folder']).glob(f'*')
+    dfs = []
+    for e_file in sorted(files):
+        dfs.append(pd.read_csv(e_file))
+    df = pd.concat(dfs, ignore_index=True)
+    avg_time_single_exit = df['avg_time'].sum() / df['avg_time'].count()
+    print(f"Average Time: {avg_time_single_exit}")
+
+    times = []
+
+    for month in range(1, 13):
+        glob = f'2016_{month:02d}'
+        files = Path(net_data[network]['rpi_folder']).glob(f'*{glob}*')
+        dfs = []
+        for e_file in sorted(files):
+            dfs.append(pd.read_csv(e_file))
+        df = pd.concat(dfs, ignore_index=True)
+
+        count = df['y'].count()
+
+        bb_time_exit_1 = df['bb_time_exit_1'].sum() / count
+        exit_time_exit_1 = df['exit_time_exit_1'].sum() / count
+        bb_time_exit_2 = df['bb_time_exit_2'].sum() / count
+        exit_time_exit_2 = df['exit_time_exit_2'].sum() / count
+
+        min_time = bb_time_exit_1 + exit_time_exit_1
+        max_time = bb_time_exit_1 + bb_time_exit_2 + exit_time_exit_2
+
+        print(f'{month:02d}: Min time: {min_time * 1000:.2f}, Max time: {max_time * 1000:.2f}')
+        time = min_time + ( max_time - min_time ) * ( 1 - net_data[network]['op_results']['exit_rate'][month - 1] )
+        times.append(time * 1000)
+
+    fig, ax = plt.subplots(constrained_layout=True, figsize=(7, 5))
+
+    y_min = 0
+    y_max = 160
+
+    #ax.set(xlim=(x_min, x_max))
+    ax.set(ylim=(y_min, y_max), ylabel='Error rate (%)')
+    ax.set(ylabel='Inf. Time (ms)')
+    ax.tick_params(axis='x', rotation=50)
+
+    ax.plot(MONTHS_NAME, times, label='Ours', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='black')
+    ax.plot(MONTHS_NAME, [ 1000 * avg_time_single_exit for x in range(0, 12) ], label='Trad.', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='red')
+    ax.legend(loc='center right', frameon=False, fontsize=18)
+    fig.savefig(f'icc2024/nsga2/proccomp.pdf')
+    
+
+
