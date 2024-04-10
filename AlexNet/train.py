@@ -5,7 +5,7 @@ from torchinfo import summary
 import sys
 sys.path.append('..')
 from utils.functions import *
-from models.MobileNet import MobileNetV2WithExits
+from models.AlexNet import AlexNetWithExits
 from torch.utils.data import DataLoader
 
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
@@ -18,5 +18,5 @@ train_data   = CustomDataset(glob=glob, as_matrix=True, directory='/home/ubuntu/
 train_loader = DataLoader(train_data, batch_size=batch_size, shuffle=True)
 
 epochs = 5
-model = MobileNetV2WithExits(ch_in=1, n_classes=2).to(device)
+model = AlexNetWithExits().to(device)
 train_2exits(model, train_loader=train_loader, device=device, epochs=epochs)

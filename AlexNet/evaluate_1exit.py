@@ -5,7 +5,7 @@ from torchinfo import summary
 import sys
 sys.path.append('..')
 from utils.functions import *
-from models.MobileNet import MobileNetV2
+from models.AlexNet import AlexNet
 from torch.utils.data import DataLoader
 
 try:
@@ -21,7 +21,7 @@ print(device)
 
 glob = '2016_01'
 
-model = MobileNetV2(ch_in=1, n_classes=2).to(device)
+model = AlexNet().to(device)
 model.load_state_dict(torch.load(savefile))
 model.eval()
 
