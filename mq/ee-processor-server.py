@@ -5,6 +5,7 @@ import time
 import torch
 import pickle
 import pika
+import socket
 sys.path.append('..')
 from models.AlexNet import AlexNetWithExits
 
@@ -59,10 +60,11 @@ def on_request(ch, method, props, body):
     e2 = model.exits[1](bb2)
     time_records['after_e2'] = time.time()
 
-    response['output'] = e2
+    response['output'] = e2.to(torch.device('cpu'))
     time_records['end'] = time.time()
 
     response['time_records'] = time_records
+    response['hostname'] = socket.gethostname()
 
     ch.basic_publish(exchange='',
                      routing_key=props.reply_to,
