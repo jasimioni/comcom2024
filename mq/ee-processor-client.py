@@ -77,8 +77,12 @@ for i in range(10):
 
     sample = torch.rand(1, 1, 8, 8).to(device)
 
+    e1_start_time = time.time()
     bb1 = model.backbone[0](sample)
     pred_e1 = model.exits[0](bb1)
+    e1_end_time = time.time()
+
+    e1_local_time = e1_end_time - e1_start_time
 
     e2_start_time = time.time()
     bb2 = model.backbone[1](bb1)
@@ -117,6 +121,7 @@ for i in range(10):
     network_latency = local_time - remote_time
 
     print(f"Processed by {hostname}")
+    print(f"Processing bb1 + e1 locally took {1000 * e1_local_time:.3f}")
     print(f"Processing bb2 + e2 locally would take: {1000 * e2_local_time:.3f} ms")
     print(f"Remotely processing took: started at {start} | ended at {end} | total: {1000 * local_time:.3f} ms")
     print(f"Remote agent spent: started at {time_records['start']} | ended at {time_records['end']} | total: {1000 * remote_time:.3f} ms")
