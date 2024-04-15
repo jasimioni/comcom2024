@@ -23,6 +23,7 @@ parser.add_argument('--device', help='PyTorch device', default='cpu')
 parser.add_argument('--trained-network-file', help='Trainet network file', required=True)
 parser.add_argument('--network', help='Network to use AlexNet | MobileNet', required=True)
 parser.add_argument('--count', help='Number of tests to run', default=1)
+parser.add_argument('--input-size', help='Input size to the network', default=8)
 
 args = parser.parse_args()
 
@@ -34,7 +35,7 @@ else:
 
 model.load_state_dict(torch.load(args.trained_network_file, map_location=device))
 model.eval()
-model(torch.rand(1, 1, 8, 8).to(device))  # Run the network once to cache it
+model(torch.rand(1, 1, int(args.input_size), int(args.input_size)).to(device))  # Run the network once to cache it
 
 class EEProcessorClient(object):
     def __init__(self):
@@ -83,10 +84,18 @@ class EEProcessorClient(object):
 
 eeprocessor = EEProcessorClient()
 
+totals = {
+    'e1_local_time': 0,
+    'e2_local_time': 0,
+    'request_local_time': 0,
+    'e2_remote_time': 0,
+    'network_latency': 0,
+    'input_size': 0
+}
 for i in range(int(args.count)):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
 
-    sample = torch.rand(1, 1, 8, 8).to(device)
+    sample = torch.rand(1, 1, int(args.input_size), int(args.input_size)).to(device)
 
     e1_start_time = time.time()
     bb1 = model.backbone[0](sample)
@@ -141,6 +150,9 @@ for i in range(int(args.count)):
         'input_size': input_size
     }
 
+    for key in totals:
+        totals[key] += statistics[key]
+
     print(json.dumps(statistics, indent=2))
 
     print(f"Processed by {hostname}")
@@ -157,3 +169,6 @@ for i in range(int(args.count)):
             elapsed = time_records[key] - current
             print(f"{key}: {1000 * elapsed:.3f} ms")
         current = time_records[key]
+
+for key in totals:
+    print(f"Average {key}: {totals[key] / int(args.count)}")
