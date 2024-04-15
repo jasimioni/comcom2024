@@ -87,7 +87,9 @@ eeprocessor = EEProcessorClient()
 totals = {
     'e1_local_time': 0,
     'e2_local_time': 0,
+    'e2_process_local_time': 0,
     'request_local_time': 0,
+    'request_process_time': 0,
     'e2_remote_time': 0,
     'network_latency': 0,
     'input_size': 0
@@ -105,11 +107,14 @@ for i in range(int(args.count)):
     e1_local_time = e1_end_time - e1_start_time
 
     e2_start_time = time.time()
+    e2_process_start_time = time.process_time()
     bb2 = model.backbone[1](bb1)
     pred_e2 = model.exits[1](bb2)
+    e2_process_end_time = time.process_time()
     e2_end_time = time.time()
 
     e2_local_time = e2_end_time - e2_start_time
+    e2_process_local_time = e2_process_end_time - e2_process_start_time
 
     request = {
         'timestamp': now,
@@ -121,9 +126,12 @@ for i in range(int(args.count)):
     print(pred_e2)
 
     start = time.time()
+    process_start = time.process_time()
     response = eeprocessor.call(request)
+    process_end = time.process_time()
     end = time.time()
     request_local_time = end - start
+    request_process_time = process_end - process_start
 
     input_size = response['input_size']
     output = response['output']
@@ -144,7 +152,9 @@ for i in range(int(args.count)):
         'hostname': hostname,
         'e1_local_time': e1_local_time * 1000,
         'e2_local_time': e2_local_time * 1000,
+        'e2_process_local_time': e2_process_local_time * 1000,
         'request_local_time': request_local_time * 1000,
+        'request_process_time': request_process_time * 1000,
         'e2_remote_time': remote_time * 1000,
         'network_latency': network_latency * 1000,
         'input_size': input_size
