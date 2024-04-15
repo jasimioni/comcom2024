@@ -86,8 +86,9 @@ eeprocessor = EEProcessorClient()
 
 totals = {
     'e1_local_time': 0,
+    'e1_process_time': 0,
     'e2_local_time': 0,
-    'e2_process_local_time': 0,
+    'e2_process_time': 0,
     'request_local_time': 0,
     'request_process_time': 0,
     'e2_remote_time': 0,
@@ -100,11 +101,14 @@ for i in range(int(args.count)):
     sample = torch.rand(1, 1, int(args.input_size), int(args.input_size)).to(device)
 
     e1_start_time = time.time()
+    e1_process_start_time = time.process_time()
     bb1 = model.backbone[0](sample)
     pred_e1 = model.exits[0](bb1)
+    e1_process_end_time = time.process_time()
     e1_end_time = time.time()
 
     e1_local_time = e1_end_time - e1_start_time
+    e1_process_time = e1_process_end_time - e1_process_start_time
 
     e2_start_time = time.time()
     e2_process_start_time = time.process_time()
@@ -114,7 +118,7 @@ for i in range(int(args.count)):
     e2_end_time = time.time()
 
     e2_local_time = e2_end_time - e2_start_time
-    e2_process_local_time = e2_process_end_time - e2_process_start_time
+    e2_process_time = e2_process_end_time - e2_process_start_time
 
     request = {
         'timestamp': now,
@@ -151,8 +155,9 @@ for i in range(int(args.count)):
     statistics = {
         'hostname': hostname,
         'e1_local_time': e1_local_time * 1000,
+        'e1_process_time': e1_process_time * 1000,
         'e2_local_time': e2_local_time * 1000,
-        'e2_process_local_time': e2_process_local_time * 1000,
+        'e2_process_time': e2_process_time * 1000,
         'request_local_time': request_local_time * 1000,
         'request_process_time': request_process_time * 1000,
         'e2_remote_time': remote_time * 1000,
