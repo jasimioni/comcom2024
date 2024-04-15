@@ -7,33 +7,44 @@ from datetime import datetime
 import time
 import json
 import sys
+import argparse
 from datetime import datetime
 sys.path.append('..')
 from models.AlexNet import AlexNetWithExits
+from models.MobileNet import MobileNetV2WithExits
 
-#mq_username = 'cuda'
-#mq_password = 'cuda'
-#mq_hostname = '192.168.32.23'
-mq_username = 'remote'
-mq_password = 'remote'
-mq_hostname = '163.107.85.230' 
-mq_queue = 'ee-processor'
+parser = argparse.ArgumentParser(description='Early Exits processor client.')
 
-device = 'cpu'
-trained_network = 'AlexNetWithExits_epoch_19_90.1_91.1.pth'
+parser.add_argument('--mq-username', help='RabbitMQ username')
+parser.add_argument('--mq-password', help='RabbitMQ password')
+parser.add_argument('--mq-hostname', help='RabbitMQ hostname', required=True)
+parser.add_argument('--mq-queue', help='RabbitMQ queue', default='ee-processor')
+parser.add_argument('--device', help='PyTorch device', default='cpu')
+parser.add_argument('--trained-network-file', help='Trainet network file', required=True)
+parser.add_argument('--network', help='Network to use AlexNet | MobileNet', required=True)
+parser.add_argument('--count', help='Number of tests to run', default=1)
 
-device = torch.device(device)
-model = AlexNetWithExits().to(device)
-model.load_state_dict(torch.load(trained_network, map_location=device))
+args = parser.parse_args()
+
+device = torch.device(args.device)
+if args.network == 'MobileNet':
+    model = MobileNetV2WithExits().to(device)
+else:
+    model = AlexNetWithExits().to(device)
+
+model.load_state_dict(torch.load(args.trained_network_file, map_location=device))
 model.eval()
+model(torch.rand(1, 1, 8, 8).to(device))  # Run the network once to cache it
 
 class EEProcessorClient(object):
     def __init__(self):
-        credentials = pika.PlainCredentials(mq_username, mq_password)
+        connection_params = { 'host': args.mq_hostname }
+        if args.mq_username and args.mq_password:
+            credentials = pika.PlainCredentials(args.mq_username, args.mq_password)
+            connection_params['credentials'] = credentials
 
         self.connection = pika.BlockingConnection(
-            pika.ConnectionParameters(host=mq_hostname, credentials=credentials))
-
+                pika.ConnectionParameters(**connection_params))
         self.channel = self.connection.channel()
 
         result = self.channel.queue_declare(queue='', exclusive=True)
@@ -56,7 +67,7 @@ class EEProcessorClient(object):
         self.corr_id = str(uuid.uuid4())
         self.channel.basic_publish(
             exchange='',
-            routing_key=mq_queue,
+            routing_key=args.mq_queue,
             properties=pika.BasicProperties(
                 reply_to=self.callback_queue,
                 correlation_id=self.corr_id,
@@ -72,7 +83,7 @@ class EEProcessorClient(object):
 
 eeprocessor = EEProcessorClient()
 
-for i in range(10):
+for i in range(int(args.count)):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
 
     sample = torch.rand(1, 1, 8, 8).to(device)
@@ -103,32 +114,42 @@ for i in range(10):
     start = time.time()
     response = eeprocessor.call(request)
     end = time.time()
-    local_time = end - start
+    request_local_time = end - start
 
     input_size = response['input_size']
     output = response['output']
     time_records = response['time_records']
     hostname = response['hostname']
 
-    # We are re-processing bb1 and e1 which are not needed, so dropping tha time from the ammount
+    # Remotely, we are re-processing bb1 and e1 which are not needed, so removing that time from the equation
     should_desconsider_time = time_records['after_e1'] - time_records['after_device_map']
 
     remote_time = time_records['end'] - time_records['start']
 
     remote_time -= should_desconsider_time
-    local_time -= should_desconsider_time
+    request_local_time -= should_desconsider_time
 
-    network_latency = local_time - remote_time
+    network_latency = request_local_time - remote_time
+    
+    statistics = {
+        'hostname': hostname,
+        'e1_local_time': e1_local_time * 1000,
+        'e2_local_time': e2_local_time * 1000,
+        'request_local_time': request_local_time * 1000,
+        'e2_remote_time': remote_time * 1000,
+        'network_latency': network_latency * 1000,
+        'input_size': input_size
+    }
+
+    print(json.dumps(statistics, indent=2))
 
     print(f"Processed by {hostname}")
     print(f"Processing bb1 + e1 locally took {1000 * e1_local_time:.3f}")
     print(f"Processing bb2 + e2 locally would take: {1000 * e2_local_time:.3f} ms")
-    print(f"Remotely processing took: started at {start} | ended at {end} | total: {1000 * local_time:.3f} ms")
+    print(f"Remotely processing took: started at {start} | ended at {end} | total: {1000 * request_local_time:.3f} ms")
     print(f"Remote agent spent: started at {time_records['start']} | ended at {time_records['end']} | total: {1000 * remote_time:.3f} ms")
     print(f"Network processing latency: {1000 * network_latency:.3f} ms")
-
     print(f"Size: {input_size}")
-    #  print(output)
 
     current = None
     for key in time_records:

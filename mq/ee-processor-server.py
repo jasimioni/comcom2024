@@ -6,32 +6,43 @@ import torch
 import pickle
 import pika
 import socket
+import argparse
 sys.path.append('..')
 from models.AlexNet import AlexNetWithExits
+from models.MobileNet import MobileNetV2WithExits
 
-#mq_username = 'cuda'
-#mq_password = 'cuda'
-#mq_hostname = '192.168.32.23'
-mq_username = 'remote'
-mq_password = 'remote'
-mq_hostname = '10.236.89.42'
-mq_queue = 'ee-processor'
-device = 'cpu'
-trained_network = 'AlexNetWithExits_epoch_19_90.1_91.1.pth'
+parser = argparse.ArgumentParser(description='Early Exits processor server.')
 
-device = torch.device(device)
-model = AlexNetWithExits().to(device)
-model.load_state_dict(torch.load(trained_network, map_location=device))
+parser.add_argument('--mq-username', help='RabbitMQ username')
+parser.add_argument('--mq-password', help='RabbitMQ password')
+parser.add_argument('--mq-hostname', help='RabbitMQ hostname', required=True)
+parser.add_argument('--mq-queue', help='RabbitMQ queue', default='ee-processor')
+parser.add_argument('--device', help='PyTorch device', default='cpu')
+parser.add_argument('--trained-network-file', help='Trainet network file', required=True)
+parser.add_argument('--network', help='Network to use AlexNet | MobileNet', required=True)
+
+args = parser.parse_args()
+
+device = torch.device(args.device)
+if args.network == 'MobileNet':
+    model = MobileNetV2WithExits().to(device)
+else:
+    model = AlexNetWithExits().to(device)
+
+model.load_state_dict(torch.load(args.trained_network_file, map_location=device))
 model.eval()
 model(torch.rand(1, 1, 8, 8).to(device))  # Run the network once to cache it
 
-credentials = pika.PlainCredentials(mq_username, mq_password)
+connection_params = { 'host': args.mq_hostname }
+if args.mq_username and args.mq_password:
+    credentials = pika.PlainCredentials(args.mq_username, args.mq_password)
+    connection_params['credentials'] = credentials
 
 connection = pika.BlockingConnection(
-    pika.ConnectionParameters(host=mq_hostname, credentials=credentials))
+    pika.ConnectionParameters(**connection_params))
 
 channel = connection.channel()
-channel.queue_declare(queue=mq_queue)
+channel.queue_declare(queue=args.mq_queue)
 
 
 def on_request(ch, method, props, body):
@@ -75,7 +86,7 @@ def on_request(ch, method, props, body):
 
 
 channel.basic_qos(prefetch_count=1)
-channel.basic_consume(queue=mq_queue, on_message_callback=on_request)
+channel.basic_consume(queue=args.mq_queue, on_message_callback=on_request)
 
-print(" [x] Awaiting RPC requests")
+print("Waiting for RPC requests")
 channel.start_consuming()
