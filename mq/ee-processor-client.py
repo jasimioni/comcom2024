@@ -2,6 +2,7 @@
 import pika
 import uuid
 import pickle
+import logging
 import torch
 from datetime import datetime
 import time
@@ -23,9 +24,16 @@ parser.add_argument('--device', help='PyTorch device', default='cpu')
 parser.add_argument('--trained-network-file', help='Trainet network file', required=True)
 parser.add_argument('--network', help='Network to use AlexNet | MobileNet', required=True)
 parser.add_argument('--count', help='Number of tests to run', default=1)
+parser.add_argument('--batch-size', help='Batch size', default=1)
 parser.add_argument('--input-size', help='Input size to the network', default=8)
+parser.add_argument('--debug', help='Enable debug messages', action='store_true')
 
 args = parser.parse_args()
+
+log_level = logging.INFO if args.debug else logging.WARN
+logging.basicConfig(level=log_level,
+                    format='%(levelname)8s: %(message)s')
+logger = logging.getLogger(__name__)
 
 device = torch.device(args.device)
 if args.network == 'MobileNet':
@@ -95,10 +103,12 @@ totals = {
     'network_latency': 0,
     'input_size': 0
 }
+
+results = []
 for i in range(int(args.count)):
     now = datetime.now().strftime('%Y-%m-%d %H:%M:%S.%f')
 
-    sample = torch.rand(1, 1, int(args.input_size), int(args.input_size)).to(device)
+    sample = torch.rand(int(args.batch_size), 1, int(args.input_size), int(args.input_size)).to(device)
 
     e1_start_time = time.time()
     e1_process_start_time = time.process_time()
@@ -126,8 +136,8 @@ for i in range(int(args.count)):
         'sample': sample
     }
 
-    print(f" [x] Requesting {now}")
-    print(pred_e2)
+    logger.info(f" [x] Requesting {now}")
+    logger.info(pred_e2)
 
     start = time.time()
     process_start = time.process_time()
@@ -167,23 +177,30 @@ for i in range(int(args.count)):
 
     for key in totals:
         totals[key] += statistics[key]
+    
+    results.append(statistics)
 
-    print(json.dumps(statistics, indent=2))
-
-    print(f"Processed by {hostname}")
-    print(f"Processing bb1 + e1 locally took {1000 * e1_local_time:.3f}")
-    print(f"Processing bb2 + e2 locally would take: {1000 * e2_local_time:.3f} ms")
-    print(f"Remotely processing took: started at {start} | ended at {end} | total: {1000 * request_local_time:.3f} ms")
-    print(f"Remote agent spent: started at {time_records['start']} | ended at {time_records['end']} | total: {1000 * remote_time:.3f} ms")
-    print(f"Network processing latency: {1000 * network_latency:.3f} ms")
-    print(f"Size: {input_size}")
+    logger.info(f"Processed by {hostname}")
+    logger.info(f"Processing bb1 + e1 locally took {1000 * e1_local_time:.3f}")
+    logger.info(f"Processing bb2 + e2 locally would take: {1000 * e2_local_time:.3f} ms")
+    logger.info(f"Remotely processing took: started at {start} | ended at {end} | total: {1000 * request_local_time:.3f} ms")
+    logger.info(f"Remote agent spent: started at {time_records['start']} | ended at {time_records['end']} | total: {1000 * remote_time:.3f} ms")
+    logger.info(f"Network processing latency: {1000 * network_latency:.3f} ms")
+    logger.info(f"Size: {input_size}")
 
     current = None
     for key in time_records:
         if current is not None:
             elapsed = time_records[key] - current
-            print(f"{key}: {1000 * elapsed:.3f} ms")
+            logger.info(f"{key}: {1000 * elapsed:.3f} ms")
         current = time_records[key]
 
 for key in totals:
-    print(f"Average {key}: {totals[key] / int(args.count)}")
+    logger.info(f"Average {key}: {totals[key] / int(args.count)}")
+    totals[key] /= int(args.count)
+
+print(json.dumps({
+    'results': results,
+    'totals': totals,
+    'parameters': vars(args)
+}, indent=2))
