@@ -13,7 +13,7 @@ import numpy
 
 
 class CustomDataset(Dataset):
-    def __init__(self, as_matrix=True, glob='200701', directory='/home/ubuntu/datasets/balanced/'):
+    def __init__(self, as_matrix=True, as_expanded_matrix=False, glob='200701', directory='/home/ubuntu/datasets/balanced/'):
         print(f'Getting files from {directory}', file=sys.stderr)
         files = Path(directory).glob(f'*{glob}*')
         dfs = []
@@ -27,7 +27,25 @@ class CustomDataset(Dataset):
 
         del df
 
-        if as_matrix:
+
+        if as_expanded_matrix:
+            p_columns = len(self.df.columns)
+
+            columns = self.df.columns
+
+            s_size = 48
+
+            total = s_size ** 2
+            for i in range(total - p_columns):
+                pos = i % p_columns
+                self.df[f'NewCol{i}'] = self.df[columns[pos]]
+
+            print(self.df.columns)
+
+            self.dataset = torch.tensor(self.df.to_numpy()).float().view(len(self.df), 1, s_size, s_size)
+
+            print(self.dataset[0])
+        elif as_matrix:
             p_columns = len(self.df.columns)
             s_size = int(math.sqrt(p_columns)) + 1
 
