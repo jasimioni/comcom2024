@@ -38,9 +38,10 @@ class CustomDataset(Dataset):
             total = s_size ** 2
             for i in range(total - p_columns):
                 pos = i % p_columns
-                self.df[f'NewCol{i}'] = self.df[columns[pos]]
+                self.df[f'{columns[pos]}{i}'] = self.df[columns[pos]]
 
-            print(self.df.columns)
+            import json
+            print(json.dumps(self.df.columns, indent=2))
 
             self.dataset = torch.tensor(self.df.to_numpy()).float().view(len(self.df), 1, s_size, s_size)
 
