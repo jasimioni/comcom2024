@@ -41,7 +41,7 @@ class CustomDataset(Dataset):
                 self.df[f'{columns[pos]}{i}'] = self.df[columns[pos]]
 
             import json
-            print(json.dumps(self.df.columns, indent=2))
+            print(json.dumps(list(self.df.columns), indent=2))
 
             self.dataset = torch.tensor(self.df.to_numpy()).float().view(len(self.df), 1, s_size, s_size)
 
