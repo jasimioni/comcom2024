@@ -24,8 +24,10 @@ from pymoo.termination import get_termination
 os.environ['PYTHONUNBUFFERED'] = '1'
 
 directories = {
-    'alexnet'   : '../evaluations/AlexNet/cuda/saves/AlexNetWithExits/2023-10-31-01-01-09/epoch_19_90.1_91.1.pth',
-    'mobilenet' : '../evaluations/MobileNet/cuda/saves/MobileNetV2WithExits/2023-08-20-05-20-25/epoch_19_89.7_90.9.pth',
+    # 'alexnet'   : '../evaluations/AlexNet/cuda/saves/AlexNetWithExits/2023-10-31-01-01-09/epoch_19_90.1_91.1.pth',
+    # 'mobilenet' : '../evaluations/MobileNet/cuda/saves/MobileNetV2WithExits/2023-08-20-05-20-25/epoch_19_89.7_90.9.pth',
+    'alexnet'   : '../calibration/calibrated/AlexNetWithExits',
+    'mobilenet' : '../calibration/calibrated/MobileNetWithExits',
 }
 
 '''
@@ -118,6 +120,7 @@ def process(directory='alexnet', glob='2016_01', min_acceptance=0.7):
     files = Path(directory).glob(f'*{glob}*')
     dfs = []
     for file in sorted(files):
+        print(file)
         dfs.append(pd.read_csv(file))
 
     df = pd.concat(dfs, ignore_index=True)
@@ -164,12 +167,12 @@ if __name__ == '__main__':
     network = sys.argv[1]
     try:
         min_acceptance = float(sys.argv[2])
-    except e:
+    except Exception as e:
         min_acceptance = 0.7
 
     print(f"Processing {network} with min_acceptance = {min_acceptance}")
 
-    X, F, min_time, max_time, accuracy_e1, acceptance_e1, accuracy_e2, acceptance_e2 = process(network, '2016_0[23]', min_acceptance)
+    X, F, min_time, max_time, accuracy_e1, acceptance_e1, accuracy_e2, acceptance_e2 = process(network, '2016_0[23].csv', min_acceptance)
 
     print(f"{min_time}, {max_time}, {accuracy_e1}, {acceptance_e1}, {accuracy_e2}, {acceptance_e2}")
 

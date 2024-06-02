@@ -125,6 +125,12 @@ class AlexNetWithExits(nn.Module):
 
         return results
 
+    def forward_exit(self, exit, x):
+        for i in range(len(self.backbone)):
+            x = self.backbone[i](x)
+            if i == exit:
+                return self.exits[i](x)
+
     def forward(self, x):
         if self.fast_inference_mode:
             for ee_n, (bb, ee) in enumerate(zip(self.backbone, self.exits)):
