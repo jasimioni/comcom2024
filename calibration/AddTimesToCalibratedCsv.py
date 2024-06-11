@@ -7,8 +7,8 @@ import sys
 BASEDIR = os.environ.get('BASEDIR') or '/home/jasimioni/ppgia/'
 
 target = {
-    'alexnet': 'calibration/pre_calibration/AlexNetWithExits',
-    'mobilenet': 'calibration/pre_calibration/MobileNetWithExits',
+    'alexnet': 'calibration/calibrated/AlexNetWithExits',
+    'mobilenet': 'calibration/calibrated/MobileNetWithExits',
 } 
 
 rpi_times = {

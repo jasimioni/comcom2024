@@ -6,7 +6,6 @@ import sys
 sys.path.append('..')
 from utils.functions import *
 from models.AlexNet import AlexNetWithExits
-from torch.utils.data import DataLoader
 
 try:
     savefile = sys.argv[1]

@@ -1,46 +1,44 @@
-#!/usr/bin/env/python3
+#!/usr/bin/env python3
 
 import os
 import sys
 sys.path.append('..')
-sys.path.append('icc2024')
 from pathlib import Path
 import numpy as np
 import pandas as pd
 import pickle
 import scipy
 
-import matplotlib
 import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
-from matplotlib.ticker import MaxNLocator
-from matplotlib import cm
-
-from utils.eval_functions import *
-
-import json
 
 print(os.getcwd())
 
+BASEDIR = os.environ.get('BASEDIR') or '/home/jasimioni/ppgia/'
+sys.path.append(f'{BASEDIR}')
+from utils.eval_functions import *
+
 MONTHS_NAME = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
+
+# calibration = [ 'non_calibrated', 93, 66 ]
+calibration = [ 'calibrated', 85, 27 ]
 
 net_data = {
     'alexnet' : {
-        'rpi_folder' : 'icc2024/evaluations/rpi_evals/AlexNet/AlexNetWithExits_epoch_19_90.1_91.1.pth',
-        'cuda_folder' : 'icc2024/evaluations/AlexNet/cuda/saves/AlexNetWithExits/2023-10-31-01-01-09/epoch_19_90.1_91.1.pth',
-        'nsga_result_file' : 'icc2024/nsga2/alexnet_x_f_0.9_2016_23.sav',
-        'rpi_single_exit_folder' : 'icc2024/evaluations/rpi_evals/AlexNet/AlexNet_epoch_16_91.2.pth/',
-        'cuda_single_exit_folder' : 'icc2024/evaluations/AlexNet/cuda/saves/AlexNet/2023-10-31-01-48-09/epoch_16_91.2.pth/',
-        'operation_point' : 93,
+        'rpi_folder' : f'{BASEDIR}/evaluations/rpi_evals/AlexNet/AlexNetWithExits_epoch_19_90.1_91.1.pth',
+        'cuda_folder' : f'{BASEDIR}/calibration/{calibration[0]}/AlexNetWithExits',
+        'nsga_result_file' : f'{BASEDIR}/nsga2/{calibration[0]}/alexnet_x_f_0.9_2016_23.sav',
+        'rpi_single_exit_folder' : f'{BASEDIR}/evaluations/rpi_evals/AlexNet/AlexNet_epoch_16_91.2.pth/',
+        'cuda_single_exit_folder' : f'{BASEDIR}/calibration/{calibration[0]}/AlexNet',
+        'operation_point' : calibration[1],
         'label' : 'AlexNet'
     },
     'mobilenet' : {
-        'rpi_folder' : 'icc2024/evaluations/rpi_evals/MobileNet/MobileNetV2WithExits_epoch_19_89.7_90.9.pth',
-        'cuda_folder' : 'icc2024/evaluations/MobileNet/cuda/saves/MobileNetV2WithExits/2023-08-20-05-20-25/epoch_19_89.7_90.9.pth',
-        'nsga_result_file' : 'icc2024/nsga2/mobilenet_x_f_0.9_2016_23.sav',
-        'rpi_single_exit_folder' : 'icc2024/evaluations/rpi_evals/MobileNet/MobileNetV2_epoch_17_90.9.pth/',
-        'cuda_single_exit_folder' : 'icc2024/evaluations/MobileNet/cuda/saves/MobileNetV2/2023-10-26-04-42-32/epoch_17_90.9.pth/',
-        'operation_point' : 66,
+        'rpi_folder' : f'{BASEDIR}/evaluations/rpi_evals/MobileNet/MobileNetV2WithExits_epoch_19_89.7_90.9.pth',
+        'cuda_folder' : f'{BASEDIR}/calibration/{calibration[0]}/MobileNetWithExits',
+        'nsga_result_file' : f'{BASEDIR}/nsga2/{calibration[0]}/mobilenet_x_f_0.9_2016_23.sav',
+        'rpi_single_exit_folder' : f'{BASEDIR}/evaluations/rpi_evals/MobileNet/MobileNetV2_epoch_17_90.9.pth/',
+        'cuda_single_exit_folder' : f'{BASEDIR}/calibration/{calibration[0]}/MobileNet',
+        'operation_point' : calibration[2],
         'label' : 'MobileNetV2'
     }
 }
@@ -171,8 +169,8 @@ if __name__ == '__main__':
 
     # plt.grid(linestyle = '--', linewidth = 0.5)
 
-    arr_x = 15
-    arr_y = 9
+    arr_x = 18
+    arr_y = 9.3
 
     for i, network in enumerate(sorted(net_data.keys())):
     # for i, network in enumerate(['mobilenet']):
@@ -213,7 +211,7 @@ if __name__ == '__main__':
     ax.text(arr_x - 3, arr_y + 0.1, 'Operation Point', fontsize=18)
     ax.legend(loc='upper right', frameon=False, fontsize=18)
     ax.set(xlim=(x_min, x_max), xlabel='Normalized Processing Time')
-    fig.savefig(f'icc2024/nsga2/nsga_pareto.pdf')
+    fig.savefig(f'{BASEDIR}/nsga2/nsga_pareto.pdf')
 
 
     fig, ax = plt.subplots(constrained_layout=True, figsize=(7, 6.5))
@@ -253,7 +251,7 @@ if __name__ == '__main__':
     ax.legend(loc='upper left', frameon=False, fontsize=18)
     # plt.grid(linestyle = '--', linewidth = 0.5)
     
-    fig.savefig(f'icc2024/nsga2/paretocomp.pdf')
+    fig.savefig(f'{BASEDIR}/nsga2/paretocomp.pdf')
 
     ### GENERATING FIG4 - ACCURACY
 
@@ -278,10 +276,13 @@ if __name__ == '__main__':
         }
 
         for month in range(1, 13):
-            glob = f'2016_{month:02d}'
+            glob = f'2016_{month:02d}.csv'
             files = Path(net_data[network]['cuda_folder']).glob(f'*{glob}*')
+
+            print(net_data[network]['cuda_folder'])
             dfs = []
             for e_file in sorted(files):
+                print(e_file)
                 dfs.append(pd.read_csv(e_file))
             
             df = pd.concat(dfs, ignore_index=True)
@@ -301,14 +302,14 @@ if __name__ == '__main__':
 
         # ax.legend(loc='upper right', frameon=False, fontsize=18)
         
-        fig.savefig(f'icc2024/nsga2/accuracyprop{network}.pdf')
+        fig.savefig(f'{BASEDIR}/nsga2/accuracyprop{network}.pdf')
 
     ### FIG 5 
     network = 'alexnet'
     op_results = net_data[network]['op_results']
     f1_single = []
     for month in range(1, 13):
-        glob = f'2016_{month:02d}'
+        glob = f'2016_{month:02d}.csv'
         files = Path(net_data[network]['cuda_single_exit_folder']).glob(f'*{glob}*')
         dfs = []
         for e_file in sorted(files):
@@ -345,7 +346,7 @@ if __name__ == '__main__':
     ax.plot(MONTHS_NAME, f1_single, label='Trad.', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='red')
 
     ax.legend(loc='upper right', frameon=False, fontsize=18)
-    fig.savefig(f'icc2024/nsga2/f1comp.pdf')
+    fig.savefig(f'{BASEDIR}/nsga2/f1comp.pdf')
     
     # FIG 6
     network = 'alexnet'
@@ -394,7 +395,7 @@ if __name__ == '__main__':
     ax.plot(MONTHS_NAME, times, label='Ours', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='black')
     ax.plot(MONTHS_NAME, [ 1000 * avg_time_single_exit for x in range(0, 12) ], label='Trad.', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='red')
     ax.legend(loc='center right', frameon=False, fontsize=18)
-    fig.savefig(f'icc2024/nsga2/proccomp.pdf')
+    fig.savefig(f'{BASEDIR}/nsga2/proccomp.pdf')
     
 
 
