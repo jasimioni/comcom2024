@@ -55,4 +55,7 @@ for month in range(1, 13):
     glob = f'2016_{month:02d}'
     dst_csv = os.path.join(args.savefolder, f'{glob}.csv')
     print(f'Processing {glob} and saving to {dst_csv}')
-    dump_2exits(model=model, directory=args.dataset_folder, device=device, glob=glob, savefile=dst_csv, batch_size=args.batch_size)
+    data   = CustomDataset(glob=glob, as_matrix=True, directory=args.dataset_folder)
+    loader = DataLoader(data, batch_size=args.batch_size, shuffle=False)
+
+    dump_2exits(model=model, device=device, loader=loader, savefile=dst_csv, batch_size=args.batch_size)

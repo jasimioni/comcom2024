@@ -229,9 +229,7 @@ def evaluate_2exits(model, device='cpu', loader=None, batch_size=1000):
     print(f'Accumulated:: {b:3} Accuracy Train: {accu_string}%')
 
 
-def dump_2exits(model, device='cpu', directory='/home/ubuntu/datasets/MOORE/', glob='2016_01', batch_size=1000, savefile='mycsv'):
-    data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
-    loader = DataLoader(data, batch_size=batch_size, shuffle=False)
+def dump_2exits(model, device='cpu', loader=None, batch_size=1000, savefile='mycsv'):
 
     measurement_mode = model.measurement_mode
     model.set_measurement_mode()

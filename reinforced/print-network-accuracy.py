@@ -10,9 +10,6 @@ from torch.utils.data import DataLoader
 import argparse
 import os
 
-print("This is not working - need to review")
-sys.exit(1)
-
 parser = argparse.ArgumentParser()
 
 parser.add_argument('--model',
@@ -49,7 +46,7 @@ glob = args.data.split('/')[-1]
 
 model.load_state_dict(torch.load(args.trained_model))
 
-data   = CustomDataset(glob=glob, as_expanded_matrix=True, directory=directory)
+data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
 loader = DataLoader(data, batch_size=args.batch_size, shuffle=True)
 
 evaluate_2exits(model, loader=loader, device=device)

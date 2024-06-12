@@ -57,7 +57,7 @@ glob = args.train_data.split('/')[-1]
 
 model.load_state_dict(torch.load(args.trained_model))
 
-train_data   = CustomDataset(glob=glob, as_expanded_matrix=True, directory=directory)
+train_data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
 train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 
 train_2exits(model, train_loader=train_loader, device=device, epochs=args.epochs, save_path=args.save_path)
