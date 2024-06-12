@@ -196,13 +196,9 @@ def train_2exits(model, train_loader=None, lr=0.001, epochs=5, save_path='saves'
     print(f'\nDuration: {time.time() - start_time:.0f} seconds')
 
 
-def evaluate_2exits(model, device='cpu', directory='/home/ubuntu/datasets/MOORE/', glob='2016_01', batch_size=1000):
-    data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
-    loader = DataLoader(data, batch_size=batch_size, shuffle=False)
-
+def evaluate_2exits(model, device='cpu', loader=None, batch_size=1000):
     accumulated_correct = [0, 0]
     accumulated_count = 0
-    cnf = [0, 0]
 
     for b, (X, y) in enumerate(loader):
         X = X.to(device)
@@ -270,11 +266,24 @@ def dump_2exits(model, device='cpu', directory='/home/ubuntu/datasets/MOORE/', g
 
         line_df = pd.DataFrame(line)#, columns = [ 'y', 'y_exit_1', 'cnf_exit_1', 'bb_time_exit_1', 'exit_time_exit_1',
                                      #                 'y_exit_2', 'cnf_exit_2', 'bb_time_exit_2', 'exit_time_exit_2' ])
+
+        line_df.columns = [ 'y', 'y_exit_1', 'cnf_exit_1', 'bb_time_exit_1', 'exit_time_exit_1',
+                                 'y_exit_2', 'cnf_exit_2', 'bb_time_exit_2', 'exit_time_exit_2' ]
+
+        correct_exit_1 = (line_df['y'] == line_df['y_exit_1']).sum()
+        correct_exit_2 = (line_df['y'] == line_df['y_exit_2']).sum()
+        total = len(line_df)
+
+        print(f'Accuracy: Exit 1: {100*correct_exit_1/total:.2f} | {100*correct_exit_2/total:.2f}')
         
         df = pd.concat([ df, line_df ], ignore_index=True)
     
-    df.columns = [ 'y', 'y_exit_1', 'cnf_exit_1', 'bb_time_exit_1', 'exit_time_exit_1',
-                        'y_exit_2', 'cnf_exit_2', 'bb_time_exit_2', 'exit_time_exit_2' ]
+
+    correct_exit_1 = (df['y'] == df['y_exit_1']).sum()
+    correct_exit_2 = (df['y'] == df['y_exit_2']).sum()
+    total = len(df)
+
+    print(f'Final Accuracy: Exit 1: {100*correct_exit_1/total:.2f} | {100*correct_exit_2/total:.2f}')
 
     df.to_csv(savefile, index=False)
 
