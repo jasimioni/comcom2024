@@ -5,14 +5,17 @@ import os
 import argparse
 
 '''
+{op['n_1']} | {op['a_1']} | {op['n_2']} | {op['a_2']}
+# alexnet - 93: 88.69 93.37 84.01 => Score: 88.69% | Acc: 93.37% Time: 0.02s | 0.9028, 0.8374, 0.9214, 0.8776
 ./generate-datasets-for-retraining.py --dataset-folder ../MOORE/ --input-results-folder original/AlexNetWithExits/ \
                                       --output-results-folder-exit-2 filtered/AlexNetWithExits/exit2/              \
                                       --output-results-folder-rejected filtered/AlexNetWithExits/rejected/         \
-                                      --threshold-attack-exit-1 0.9 \
-                                      --threshold-attack-exit-2 0.9 \
-                                      --threshold-normal-exit-1 0.9 \
-                                      --threshold-normal-exit-2 0.9
+                                      --threshold-attack-exit-1 0.8374 \
+                                      --threshold-attack-exit-2 0.9028 \
+                                      --threshold-normal-exit-1 0.8776 \
+                                      --threshold-normal-exit-2 0.9214
 
+mobilenet - 66: 84.37 92.94 75.79 => Score: 84.37% | Acc: 92.94% Time: 0.07s | 0.8317, 0.9094, 0.8955, 0.9189
 ./generate-datasets-for-retraining.py --dataset-folder ../MOORE/ --input-results-folder original/MobileNetV2WithExits/ \
                                       --output-results-folder-exit-2 filtered/MobileNetV2WithExits/exit2/              \
                                       --output-results-folder-rejected filtered/MobileNetV2WithExits/rejected/         \
@@ -84,7 +87,7 @@ for month in range(1, 13):
     # Filter entries where y == 1 and cnf_exit1 < threshold_attack_exit_1
     # or y = 0 and cnf_exit1 < threshold_normal_exit_1
     
-    exit2 = df.query('(clazz == 0 and cnf_exit_1 < @args.threshold_attack_exit_1) or (clazz == 0 and cnf_exit_1 < @args.threshold_normal_exit_1)')
+    exit2 = df.query('(clazz == 1 and cnf_exit_1 < @args.threshold_attack_exit_1) or (clazz == 0 and cnf_exit_1 < @args.threshold_normal_exit_1)')
 
     # Save the filtered entries to output_results_folder_exit_2
     dst_filename = os.path.join(args.output_results_folder_exit_2, f'2016_{month:02d}.csv')
