@@ -19,8 +19,8 @@ from utils.eval_functions import *
 
 MONTHS_NAME = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"]
 
-# calibration = [ 'non_calibrated', 93, 66 ]
-calibration = [ 'calibrated', 85, 27 ]
+calibration = [ 'non_calibrated', 93, 66 ]
+# calibration = [ 'calibrated', 85, 27 ]
 
 net_data = {
     'alexnet' : {
@@ -211,7 +211,7 @@ if __name__ == '__main__':
     ax.text(arr_x - 3, arr_y + 0.1, 'Operation Point', fontsize=18)
     ax.legend(loc='upper right', frameon=False, fontsize=18)
     ax.set(xlim=(x_min, x_max), xlabel='Normalized Processing Time')
-    fig.savefig(f'{BASEDIR}/nsga2/nsga_pareto.pdf')
+    fig.savefig(f'{BASEDIR}/nsga2/nsga_pareto_{calibration[0]}.pdf')
 
 
     fig, ax = plt.subplots(constrained_layout=True, figsize=(7, 6.5))
@@ -251,7 +251,7 @@ if __name__ == '__main__':
     ax.legend(loc='upper left', frameon=False, fontsize=18)
     # plt.grid(linestyle = '--', linewidth = 0.5)
     
-    fig.savefig(f'{BASEDIR}/nsga2/paretocomp.pdf')
+    fig.savefig(f'{BASEDIR}/nsga2/paretocomp_{calibration[0]}.pdf')
 
     ### GENERATING FIG4 - ACCURACY
 
@@ -302,7 +302,7 @@ if __name__ == '__main__':
 
         # ax.legend(loc='upper right', frameon=False, fontsize=18)
         
-        fig.savefig(f'{BASEDIR}/nsga2/accuracyprop{network}.pdf')
+        fig.savefig(f'{BASEDIR}/nsga2/accuracyprop{network}_{calibration[0]}.pdf')
 
     ### FIG 5 
     network = 'alexnet'
@@ -346,7 +346,7 @@ if __name__ == '__main__':
     ax.plot(MONTHS_NAME, f1_single, label='Trad.', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='red')
 
     ax.legend(loc='upper right', frameon=False, fontsize=18)
-    fig.savefig(f'{BASEDIR}/nsga2/f1comp.pdf')
+    fig.savefig(f'{BASEDIR}/nsga2/f1comp_{calibration[0]}.pdf')
     
     # FIG 6
     network = 'alexnet'
@@ -395,7 +395,7 @@ if __name__ == '__main__':
     ax.plot(MONTHS_NAME, times, label='Ours', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='black')
     ax.plot(MONTHS_NAME, [ 1000 * avg_time_single_exit for x in range(0, 12) ], label='Trad.', marker='s', ms=12, linestyle='dotted', fillstyle='none', color='red')
     ax.legend(loc='center right', frameon=False, fontsize=18)
-    fig.savefig(f'{BASEDIR}/nsga2/proccomp.pdf')
+    fig.savefig(f'{BASEDIR}/nsga2/proccomp_{calibration[0]}.pdf')
     
 
 

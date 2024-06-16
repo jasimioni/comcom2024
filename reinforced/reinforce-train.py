@@ -31,7 +31,7 @@ parser.add_argument('--batch-size',
 
 parser.add_argument('--epochs',
                     help='Number of epochs to train the model',
-                    default=5)  
+                    default=15)  
 
 parser.add_argument('--save-path',
                     help='Path to save the trained model',
@@ -60,4 +60,4 @@ model.load_state_dict(torch.load(args.trained_model))
 train_data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
 train_loader = DataLoader(train_data, batch_size=args.batch_size, shuffle=True)
 
-train_2exits(model, train_loader=train_loader, device=device, epochs=args.epochs, save_path=args.save_path)
+train_2exits(model, train_loader=train_loader, device=device, epochs=int(args.epochs), save_path=args.save_path)

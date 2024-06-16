@@ -13,9 +13,14 @@ import numpy
 
 
 class CustomDataset(Dataset):
-    def __init__(self, as_matrix=True, as_expanded_matrix=False, glob='200701', directory='/home/ubuntu/datasets/balanced/'):
-        print(f'Getting files from {directory}', file=sys.stderr)
-        files = Path(directory).glob(f'*{glob}*')
+    def __init__(self, as_matrix=True, as_expanded_matrix=False, glob='200701', directory='/home/ubuntu/datasets/balanced/', file=None):
+        if file is not None:
+            print(f'Getting file {file}', file=sys.stderr)
+            files = [ file ] 
+        else:
+            print(f'Getting files from {directory}', file=sys.stderr)
+            files = Path(directory).glob(f'*{glob}*')
+
         dfs = []
         for file in sorted(files):
             print("Reading: ", file, file=sys.stderr)
@@ -142,8 +147,7 @@ def train_2exits(model, train_loader=None, lr=0.001, epochs=5, save_path='saves'
     dt_string = datetime.now().strftime("%Y-%m-%d-%H-%M-%S")
     name = model.__class__.__name__
 
-    path = os.path.join(save_path, name, dt_string)
-    Path(path).mkdir(parents=True, exist_ok=True)
+    Path(save_path).mkdir(parents=True, exist_ok=True)   
     
     optimizer = optimizer(model.parameters(), lr=lr)
 
@@ -188,7 +192,7 @@ def train_2exits(model, train_loader=None, lr=0.001, epochs=5, save_path='saves'
 
         accuracy = '_'.join(f'{correct.item()*100/trn_cnt:2.3}' for correct in trn_cor)
 
-        filename = os.path.join(path, f'epoch_{i}_{accuracy}.pth')
+        filename = os.path.join(save_path, f'{name}_{dt_string}_epoch_{i}_{accuracy}.pth')
         torch.save(model.state_dict(), filename)
         
         # show_exits_stats(model, test_loader, criterion, device)
@@ -229,8 +233,7 @@ def evaluate_2exits(model, device='cpu', loader=None, batch_size=1000):
     print(f'Accumulated:: {b:3} Accuracy Train: {accu_string}%')
 
 
-def dump_2exits(model, device='cpu', loader=None, batch_size=1000, savefile='mycsv'):
-
+def dump_2exits(model, device='cpu', loader=None, savefile=None):
     measurement_mode = model.measurement_mode
     model.set_measurement_mode()
 
@@ -283,9 +286,12 @@ def dump_2exits(model, device='cpu', loader=None, batch_size=1000, savefile='myc
 
     print(f'Final Accuracy: Exit 1: {100*correct_exit_1/total:.2f} | {100*correct_exit_2/total:.2f}')
 
-    df.to_csv(savefile, index=False)
+    if savefile is not None:
+        df.to_csv(savefile, index=False)
 
     model.set_measurement_mode(measurement_mode)
+    
+    return df
 
 def dump_1exit(model, device='cpu', directory='/home/ubuntu/datasets/MOORE/', glob='2016_01', batch_size=1000, savefile='mycsv'):
     data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
