@@ -21,9 +21,13 @@ import argparse
 
 parser = argparse.ArgumentParser()
 
-parser.add_argument('trainedmodel',
+parser.add_argument('--trained-model',
                     help='.pth file to open',
-                    type=argparse.FileType('r'))
+                    required=True)
+
+parser.add_argument('--calibrated-model-savefile',
+                    help='.pth file to save',
+                    required=True)
 
 parser.add_argument('--model',
                     help='Model to choose - [alexnet | mobilenet]',
@@ -31,6 +35,25 @@ parser.add_argument('--model',
 
 parser.add_argument('--savefolder',
                     help='Folder to save to',
+                    required=False)
+
+parser.add_argument('--batch-size',
+                    help='Batch size',
+                    default=1000,
+                    type=int)
+
+parser.add_argument('--max-iter', 
+                    help='Max iterations for temperature scaling',
+                    default=10,
+                    type=int)
+
+parser.add_argument('--epochs',
+                    help='Number of epochs for training',
+                    default=80,
+                    type=int)
+
+parser.add_argument('--dataset',
+                    help='Dataset to use',
                     required=True)
 
 args = parser.parse_args()
@@ -44,65 +67,82 @@ if args.model == 'alexnet':
 else:
     model = MobileNetV2WithExits(ch_in=1, n_classes=2).to(device)
 
-model.load_state_dict(torch.load(args.trainedmodel.name))
-model = ModelWithTemperature(model)
+model.load_state_dict(torch.load(args.trained_model))
 
-directory = '../MOORE'
-glob = '2016_02'
-batch_size = 1000
-    
-data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
-loader = DataLoader(data, batch_size=batch_size, shuffle=False)
+print(f"Epochs: {args.epochs}, Max Iterations: {args.max_iter}")
+model_t = ModelWithTemperature(model, device=device, max_iter=args.max_iter, epochs=args.epochs)
 
-model.set_temperature(loader)
+data   = CustomDataset(as_matrix=True, file=args.dataset)
+loader = DataLoader(data, batch_size=args.batch_size, shuffle=True)
 
-calibrated_name = args.trainedmodel.name[0:-4] + '_calibrated.pth'
-torch.save(model.state_dict(), calibrated_name)
+model_t.set_temperature(loader)
 
-batch_size = 250
+torch.save(model_t.state_dict(), args.calibrated_model_savefile)
 
-for month in [8]:
-    torch.cuda.empty_cache()
-    glob = f'2016_{month+1:02d}'
+print(model_t.temperature)
+print(model_t.temperature[0])
+print(model_t.temperature[1])
 
-    data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
-    loader = DataLoader(data, batch_size=batch_size, shuffle=False)
+model_t = ModelWithTemperature(model, device=device, max_iter=args.max_iter, epochs=args.epochs)
+model_t.load_state_dict(torch.load(args.calibrated_model_savefile))
 
-    df = pd.DataFrame()
+print(model_t.temperature)
+print(model_t.temperature[0])
+print(model_t.temperature[1])
 
-    for b, (X, y) in enumerate(loader):
-        X = X.to(device)
-        y = y.to(device)
-        b += 1
+# Evaluate the model - need to remove from here
 
-        print(f'{b:05d}: {len(y)}')
+if args.savefolder:
+    os.makedirs(args.savefolder, exist_ok=True)
+    directory = '../MOORE'
 
-        y_pred = model(X) 
+    for month in range(1, 13):
+        torch.cuda.empty_cache()
+        glob = f'2016_{month:02d}'
 
-        line = y.view(-1, 1).cpu().numpy().tolist()
+        data   = CustomDataset(glob=glob, as_matrix=True, directory=directory)
+        loader = DataLoader(data, batch_size=args.batch_size, shuffle=False)
 
-        for exit, results in enumerate(y_pred):   
-            count = len(y)
+        df = pd.DataFrame()
 
-            y_pred_exit = results
+        for b, (X, y) in enumerate(loader):
+            X = X.to(device)
+            y = y.to(device)
+            b += 1
 
-            certainty, predicted = torch.max(nn.functional.softmax(y_pred_exit, dim=-1), 1)
+            print(f'{b:05d}: {len(y)}', end="")
 
-            avg_bb_time = 0
-            avg_exit_time = 0
+            y_pred = model_t(X) 
 
-            for n in range(count):
-                line[n].extend([ predicted[n].item(), certainty[n].item(), avg_bb_time, avg_exit_time ])
+            line = y.view(-1, 1).cpu().numpy().tolist()
 
-        line_df = pd.DataFrame(line)#, columns = [ 'y', 'y_exit_1', 'cnf_exit_1', 'bb_time_exit_1', 'exit_time_exit_1',
-                                     #                 'y_exit_2', 'cnf_exit_2', 'bb_time_exit_2', 'exit_time_exit_2' ])
-        
-        df = pd.concat([ df, line_df ], ignore_index=True)
+            for exit, results in enumerate(y_pred):   
+                count = len(y)
 
-    df.columns = [ 'y', 'y_exit_1', 'cnf_exit_1', 'bb_time_exit_1', 'exit_time_exit_1',
-                        'y_exit_2', 'cnf_exit_2', 'bb_time_exit_2', 'exit_time_exit_2' ]
+                y_pred_exit = results
 
-    savefile = os.path.join(args.savefolder, f"{glob}.csv")
-    df.to_csv(savefile, index=False)
+                certainty, predicted = torch.max(nn.functional.softmax(y_pred_exit, dim=-1), 1)
+                accuracy = (predicted == y).sum().item() / len(y)
+                avg_certainty = certainty.mean().item()
 
-    del df, data, loader
+                print(f' | Exit {exit + 1}: Accuracy: {accuracy:.3f}, Avg Certainty: {avg_certainty:.3f}' , end="")
+
+                avg_bb_time = 0
+                avg_exit_time = 0
+
+                for n in range(count):
+                    line[n].extend([ predicted[n].item(), certainty[n].item(), avg_bb_time, avg_exit_time ])
+
+            print("")
+            line_df = pd.DataFrame(line)#, columns = [ 'y', 'y_exit_1', 'cnf_exit_1', 'bb_time_exit_1', 'exit_time_exit_1',
+                                         #                 'y_exit_2', 'cnf_exit_2', 'bb_time_exit_2', 'exit_time_exit_2' ])
+            
+            df = pd.concat([ df, line_df ], ignore_index=True)
+
+        df.columns = [ 'y', 'y_exit_1', 'cnf_exit_1', 'bb_time_exit_1', 'exit_time_exit_1',
+                            'y_exit_2', 'cnf_exit_2', 'bb_time_exit_2', 'exit_time_exit_2' ]
+
+        savefile = os.path.join(args.savefolder, f"{glob}.csv")
+        df.to_csv(savefile, index=False)
+
+        del df, data, loader

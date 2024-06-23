@@ -5,14 +5,14 @@ import pandas as pd
 from pathlib import Path
 
 list = [
-    [ 'an_rpi', 'icc2024/evaluations/rpi_evals/AlexNet/AlexNet_epoch_16_91.2.pth' ],
-    [ 'an_cpu', 'icc2024/evaluations/AlexNet/short_cpu/saves/AlexNet/2023-10-31-01-48-09/epoch_16_91.2.pth' ],
-    [ 'an_gpu', 'icc2024/evaluations/AlexNet/short_cuda/saves/AlexNet/2023-10-31-01-48-09/epoch_16_91.2.pth' ],
-    [ 'mn_rpi', 'icc2024/evaluations/rpi_evals/MobileNet/MobileNetV2_epoch_17_90.9.pth' ],
-    [ 'mn_cpu', 'icc2024/evaluations/MobileNet/short_cpu/saves/MobileNetV2/2023-10-26-04-42-32/epoch_17_90.9.pth' ],
-    [ 'mn_gpu', 'icc2024/evaluations/MobileNet/short_cuda/saves/MobileNetV2/2023-10-26-04-42-32/epoch_17_90.9.pth' ],
-    [ 'an_gpu_full', 'icc2024/evaluations/AlexNet/cuda/saves/AlexNet/2023-10-31-01-48-09/epoch_16_91.2.pth' ],
-    [ 'mn_gpu_full', 'icc2024/evaluations/MobileNet/cuda/saves/MobileNetV2/2023-10-26-04-42-32/epoch_17_90.9.pth' ]
+    [ 'an_rpi', '../evaluations/rpi_evals/AlexNet/AlexNet_epoch_16_91.2.pth' ],
+    [ 'an_cpu', '../evaluations/AlexNet/short_cpu/saves/AlexNet/2023-10-31-01-48-09/epoch_16_91.2.pth' ],
+    [ 'an_gpu', '../evaluations/AlexNet/short_cuda/saves/AlexNet/2023-10-31-01-48-09/epoch_16_91.2.pth' ],
+    [ 'mn_rpi', '../evaluations/rpi_evals/MobileNet/MobileNetV2_epoch_17_90.9.pth' ],
+    [ 'mn_cpu', '../evaluations/MobileNet/short_cpu/saves/MobileNetV2/2023-10-26-04-42-32/epoch_17_90.9.pth' ],
+    [ 'mn_gpu', '../evaluations/MobileNet/short_cuda/saves/MobileNetV2/2023-10-26-04-42-32/epoch_17_90.9.pth' ],
+    [ 'an_gpu_full', '../evaluations/AlexNet/cuda/saves/AlexNet/2023-10-31-01-48-09/epoch_16_91.2.pth' ],
+    [ 'mn_gpu_full', '../evaluations/MobileNet/cuda/saves/MobileNetV2/2023-10-26-04-42-32/epoch_17_90.9.pth' ]
 ]
 
 def get_time(directory):
@@ -48,7 +48,7 @@ ax.tick_params(axis='x', rotation=45)
 
 ax.bar([ 'AlexNet', 'MobileNet' ], [ an_rpi_rate, mn_rpi_rate ])
 
-fig.savefig(f'icc2024/evaluations/rpi_inference_rate.pdf')
+fig.savefig(f'../evaluations/rpi_inference_rate.pdf')
 
 y_max = max([ an_cpu_rate, mn_cpu_rate, mn_gpu_rate, an_gpu_rate ])
 y_max = int(y_max / 1000) * 1000 + 1000
@@ -59,5 +59,5 @@ ax.tick_params(axis='x', rotation=45)
 
 ax.bar([ 'AlexNet CPU', 'AlexNet GPU', 'MobileNet CPU', 'MobileNet GPU' ], [ an_cpu_rate, an_gpu_rate, mn_cpu_rate, mn_gpu_rate ])
 
-fig.savefig(f'icc2024/evaluations/computer_inference_rate.pdf')
+fig.savefig(f'../evaluations/computer_inference_rate.pdf')
 '''

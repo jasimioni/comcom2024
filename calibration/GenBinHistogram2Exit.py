@@ -10,13 +10,8 @@ from sklearn.linear_model import Ridge
 
 plt.rc('font', family='serif', size=16)
 
-def genHistogram(directory, glob, savefolder, description):
-    files = Path(directory).glob(f'*{glob}*')
-    dfs = []
-    for file in sorted(files):
-        dfs.append(pd.read_csv(file))        
-
-    df_total = pd.concat(dfs, ignore_index=True)
+def genHistogram(file, savefolder, description):
+    df_total = pd.read_csv(file)
 
     os.makedirs(savefolder, exist_ok=True)
 
@@ -32,11 +27,14 @@ def genHistogram(directory, glob, savefolder, description):
             'attack': df_total.query("y == 1")
         }
 
-        for df_name in [ 'total', 'normal', 'attack' ]:
+        for df_name in [ 'total' ]: #, 'normal', 'attack' ]:
             df = dfs[df_name]
 
             max = df[f"cnf_exit_{exit}"].max()
             min = df[f"cnf_exit_{exit}"].min()
+            
+            max = 1
+            min = 0.5
 
             step = ( max - min ) / n_bin
 
@@ -90,15 +88,21 @@ def genHistogram(directory, glob, savefolder, description):
 if __name__ == '__main__':
     for month in range(12):
         glob = f'2016_{month + 1:02d}'
-        genHistogram('../evaluations/AlexNet/cuda/saves/AlexNetWithExits/2023-10-31-01-01-09/epoch_19_90.1_91.1.pth/',
-                     glob, 'pre_calibration/AlexNetEE', f'AlexNetEE_{glob}')
+        #genHistogram('../evaluations/AlexNet/cuda/saves/AlexNetWithExits/2023-10-31-01-01-09/epoch_19_90.1_91.1.pth/',
+        #             glob, 'non_calibrated/AlexNetEE', f'AlexNetEE_{glob}')
 
-        genHistogram('../evaluations/MobileNet/cuda/saves/MobileNetV2WithExits/2023-08-20-05-20-25/epoch_19_89.7_90.9.pth/',
-                     glob, 'pre_calibration/MobileNetEE', f'MobileNetEE_{glob}')
+        #genHistogram('../evaluations/MobileNet/cuda/saves/MobileNetV2WithExits/2023-08-20-05-20-25/epoch_19_89.7_90.9.pth/',
+        #             glob, 'non_calibrated/MobileNetEE', f'MobileNetEE_{glob}')
 
-        genHistogram('calibrated/AlexNetWithExits',
-                     glob, 'calibrated/AlexNetWithExits', f'Calibrated_AlexNetEE_{glob}')
+        genHistogram(f'calibrated/AlexNetWithExits/01/{glob}.csv',
+                     'calibrated/AlexNetWithExits/01/', f'Calibrated_AlexNetEE_{glob}')
 
-        genHistogram('calibrated/MobileNetWithExits',
-                     glob, 'calibrated/MobileNetWithExits', f'Calibrated_MobileNetEE_{glob}')
+        genHistogram(f'calibrated/AlexNetWithExits/02/{glob}.csv',
+                     'calibrated/AlexNetWithExits/02/', f'Calibrated_AlexNetEE_{glob}')
+
+        genHistogram(f'calibrated/MobileNetWithExits/01/{glob}.csv',
+                     'calibrated/MobileNetWithExits/01/', f'Calibrated_MobileNetEE_{glob}')
+
+        genHistogram(f'calibrated/MobileNetWithExits/02/{glob}.csv',
+                     'calibrated/MobileNetWithExits/02/', f'Calibrated_MobileNetEE_{glob}')
         
