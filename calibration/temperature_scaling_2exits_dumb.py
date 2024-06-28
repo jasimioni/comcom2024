@@ -80,40 +80,29 @@ class ModelWithTemperature(nn.Module):
             labels = torch.cat(labels_list).to(self.device)
 
         # Calculate NLL and ECE before temperature scaling
-        before_temperature_nll = nll_criterion(logits, labels).item()
         before_temperature_ece = ece_criterion(logits, labels).item()
-
-        # Next: optimize the temperature w.r.t. NLL
-        optimizer = optim.LBFGS([self.temperature[exit]], lr=0.01, max_iter=self.max_iter)
-
-        def eval():
-            optimizer.zero_grad()
-            loss = nll_criterion(self.temperature_scale(exit, logits), labels)
-            loss.backward()
-            return loss
 
         best = {
             'ece': 1,
             'temperature': None
         }
         
-        for _ in range(self.epochs):
-            optimizer.step(eval)
-
-            # Calculate NLL and ECE after temperature scaling
-            after_temperature_nll = nll_criterion(self.temperature_scale(exit, logits), labels).item()
+        for t in range(1, 10000):
+            temperature = t / 1000.0
+            
+            self.temperature[exit] = nn.Parameter(torch.ones(1).to(self.device) * temperature)
             after_temperature_ece = ece_criterion(self.temperature_scale(exit, logits), labels).item()
             
             if after_temperature_ece < best['ece']:
                 best['ece'] = after_temperature_ece
                 best['temperature'] = self.temperature[exit].item()
                 
-            print(f'Epoch {_:02d} exit {exit}: Temperature: {self.temperature[exit].item():.5f}')
-            print(f'                 After temperature NLL: {after_temperature_nll:.5f}, ECE: {after_temperature_ece:.5f}')
-            print(f'                 Best temperature so far: {best["temperature"]:.5f}, ECE: {best["ece"]:.5f}')
+            print(f'{t:04d}: {exit}: Temperature: {self.temperature[exit].item():.5f}')
+            print(f'\tAfter temperature NLL: ECE: {after_temperature_ece:.5f}')
+            print(f'\tBest temperature so far: {best["temperature"]:.5f}, ECE: {best["ece"]:.5f}')
 
         self.temperature[exit] = nn.Parameter(torch.ones(1).to(self.device) * best['temperature'])
-        print(f'Before temperature for {exit} - NLL: {before_temperature_nll:.3f}, ECE: {before_temperature_ece:.3f}')
+        print(f'Before temperature for {exit} - ECE: {before_temperature_ece:.3f}')
         print(f"Best temperature for {exit}: {self.temperature[exit].item():.5f}, ece: {best['ece']:.5f}")
 
         return self

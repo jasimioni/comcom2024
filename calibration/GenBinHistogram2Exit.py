@@ -6,9 +6,12 @@ from pathlib import Path
 import numpy as np
 import os
 from sklearn.linear_model import Ridge
+import argparse
+from helper import *
 
 
 plt.rc('font', family='serif', size=16)
+
 
 def genHistogram(file, savefolder, description):
     df_total = pd.read_csv(file)
@@ -86,6 +89,10 @@ def genHistogram(file, savefolder, description):
             print(f"![{image_name}]({image_name + '.png'})")
 
 if __name__ == '__main__':
+    argparser = argparse.ArgumentParser()
+    argparser.add_argument('--datafile', type=str, required=True)
+    
+    
     for month in range(12):
         glob = f'2016_{month + 1:02d}'
         #genHistogram('../evaluations/AlexNet/cuda/saves/AlexNetWithExits/2023-10-31-01-01-09/epoch_19_90.1_91.1.pth/',
