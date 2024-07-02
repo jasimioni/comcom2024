@@ -1,0 +1,8 @@
+an_rpi: 7.36
+an_cpu: 247.34
+an_gpu: 17609.45
+mn_rpi: 7.93
+mn_cpu: 509.58
+mn_gpu: 3419.60
+an_gpu_full: 484130.47
+mn_gpu_full: 97567.94

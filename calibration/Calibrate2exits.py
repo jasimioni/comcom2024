@@ -10,7 +10,7 @@ from utils.functions import *
 from models.AlexNet import AlexNetWithExits
 from models.MobileNet import MobileNetV2WithExits
 from torch.utils.data import DataLoader
-from temperature_scaling_2exits import ModelWithTemperature
+from temperature_scaling_2exits_dumb import ModelWithTemperature
 import pandas as pd
 import argparse
 

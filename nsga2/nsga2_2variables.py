@@ -26,8 +26,8 @@ os.environ['PYTHONUNBUFFERED'] = '1'
 directories = {
     # 'alexnet'   : '../evaluations/AlexNet/cuda/saves/AlexNetWithExits/2023-10-31-01-01-09/epoch_19_90.1_91.1.pth',
     # 'mobilenet' : '../evaluations/MobileNet/cuda/saves/MobileNetV2WithExits/2023-08-20-05-20-25/epoch_19_89.7_90.9.pth',
-    'alexnet'   : '../calibration/calibrated/AlexNetWithExits',
-    'mobilenet' : '../calibration/calibrated/MobileNetWithExits',
+    'alexnet'   : '../calibration/calibrated/AlexNetWithExits/01',
+    'mobilenet' : '../calibration/calibrated/MobileNetWithExits/01',
 }
 
 '''

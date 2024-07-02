@@ -25,7 +25,7 @@ calibration = [ 'non_calibrated', 93, 66 ]
 net_data = {
     'alexnet' : {
         'rpi_folder' : f'{BASEDIR}/evaluations/rpi_evals/AlexNet/AlexNetWithExits_epoch_19_90.1_91.1.pth',
-        'cuda_folder' : f'{BASEDIR}/calibration/{calibration[0]}/AlexNetWithExits',
+        'cuda_folder' : f'{BASEDIR}/calibration/{calibration[0]}/AlexNetWithExits/02',
         'nsga_result_file' : f'{BASEDIR}/nsga2/{calibration[0]}/alexnet_x_f_0.9_2016_23.sav',
         'rpi_single_exit_folder' : f'{BASEDIR}/evaluations/rpi_evals/AlexNet/AlexNet_epoch_16_91.2.pth/',
         'cuda_single_exit_folder' : f'{BASEDIR}/calibration/{calibration[0]}/AlexNet',
@@ -34,7 +34,7 @@ net_data = {
     },
     'mobilenet' : {
         'rpi_folder' : f'{BASEDIR}/evaluations/rpi_evals/MobileNet/MobileNetV2WithExits_epoch_19_89.7_90.9.pth',
-        'cuda_folder' : f'{BASEDIR}/calibration/{calibration[0]}/MobileNetWithExits',
+        'cuda_folder' : f'{BASEDIR}/calibration/{calibration[0]}/MobileNetWithExits/02',
         'nsga_result_file' : f'{BASEDIR}/nsga2/{calibration[0]}/mobilenet_x_f_0.9_2016_23.sav',
         'rpi_single_exit_folder' : f'{BASEDIR}/evaluations/rpi_evals/MobileNet/MobileNetV2_epoch_17_90.9.pth/',
         'cuda_single_exit_folder' : f'{BASEDIR}/calibration/{calibration[0]}/MobileNet',
